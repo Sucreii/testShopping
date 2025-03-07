@@ -3,7 +3,7 @@ import axios from 'axios'
 
 export default function Cart() {
 
-    const [countData, setCount] = useState([])
+    const [countData, setCount] = useState([]) 
     const getCount = async () => {
         try{
             const cartCounts = await axios.get(`${import.meta.env.VITE_PRODUCTS_URL}/carts`)
@@ -18,7 +18,8 @@ export default function Cart() {
     
     const handleDelID = async (id) => {
         try{
-            await axios.delete(`${import.meta.env.VITE_PRODUCTS_URL}/carts/${id}`)
+            const response = await axios.delete(`${import.meta.env.VITE_PRODUCTS_URL}/carts/${id}`)
+            console.log(`Success delete`, response)
             
             setCount(countData.filter(cart => cart.id !== id))
         }

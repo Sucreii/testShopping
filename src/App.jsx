@@ -4,67 +4,37 @@ import './App.css'
 import Header from './components/header'
 import Filter from './components/filter'
 import Cart from './components/cart'
+import { getCount } from './store'
 
 function App() {
 
   const [products, setProducts] = useState([])
   const [countData, setCount] = useState([])
-
+  const [sortBy, setSortBy] = useState('')
+  const [loadingStates, setLoadingStates] = useState({})
+  const handleSortChange = (event) => {
+    setSortBy(event.target.value);
+  }
+  
   const justInProd = [
-    { userId: '7', 
-      products: [{
-        id: '101', 
-        title: 'Mocha Mate',
-        price: 388.00, 
-        description: 'Sample deszcription: Lorem Ipsum', 
-        category: 'kitchen gear', 
-        image: 'mocha.png'
+    { userId: '7', products: [{
+        id: '101', title: 'Mocha Mate', price: 388.00, description: 'Sample description: Lorem Ipsum', category: 'kitchen gear', image: 'mocha.png'
     }]}, 
-    { userId: '8', 
-      products: [{
-        id: '102', 
-        title: 'Swift Write',
-        price: 10.99, 
-        description: 'Sample deszcription: Lorem Ipsum', 
-        category: 'office tool',
-        image: 'swift_write.png'
+    { userId: '8', products: [{
+        id: '102', title: 'Swift Write', price: 10.99, description: 'Sample description: Lorem Ipsum', category: 'office tool',image: 'swift_write.png'
     }]}, 
-    { userId: '9', 
-      products: [{
-        id: '103', 
-        title: 'Barber Tool',
-        price: 199.99, 
-        description: 'Sample deszcription: Lorem Ipsum', 
-        category: 'self care',
-        image: 'barber_tool.png'
+    { userId: '9', products: [{
+        id: '103', title: 'Barber Tool', price: 199.99, description: 'Sample description: Lorem Ipsum', category: 'self care',image: 'barber_tool.png'
     }]}, 
-    { userId: '10', 
-      products: [{
-        id: '104', 
-        title: 'Marcel the Shell',
-        price: 33.99, 
-        description: 'Sample deszcription: Lorem Ipsum', 
-        category: 'home decor',
-        image: 'marcel.png'
+    { userId: '10', products: [{
+        id: '104', title: 'Marcel the Shell', price: 33.99, description: 'Sample description: Lorem Ipsum', category: 'home decor',image: 'marcel.png'
     }]},
-    { userId: '11', 
-      products: [{
-        id: '105', 
-        title: 'Pepper',
-        price: 26.41, 
-        description: 'Sample deszcription: Lorem Ipsum', 
-        category: 'kitchen gear',
-        image: 'pepper.png'
+    { userId: '11', products: [{
+        id: '105', title: 'Pepper', price: 26.41, description: 'Sample description: Lorem Ipsum', category: 'kitchen gear',image: 'pepper.png'
     }]}, 
-    { userId: '12', 
-      products: [{
-        id: '106', 
-        title: 'vera cup',
-        price: 94.99, 
-        description: 'Sample deszcription: Lorem Ipsum', 
-        category: 'kitchen gear',
-        image: 'cup.png'
-    }]},
+    { userId: '12', products: [{
+        id: '106', title: 'vera cup', price: 94.99, description: 'Sample description: Lorem Ipsum', category: 'kitchen gear',image: 'cup.png'
+    }]}
   ]
 
   const apiCall = async () => {
@@ -79,18 +49,44 @@ function App() {
     }
   }
 
-  const addCart = async () => {
+  const addCart = async (userId, product) => {
+
+    const key = `${userId}-${product.title}`
+    setLoadingStates((prev) => ({ ...prev, [key]: true }))
+
     try{
-      const addNewCart = await axios.post(`${import.meta.env.VITE_PRODUCTS_URL}/carts`, 
-      )
+      const addNewCart = await axios.post(`${import.meta.env.VITE_PRODUCTS_URL}/carts`, {
+        userId: userId, 
+        products: [product]
+      })
+
+      if(addNewCart.status === 200){
+          getCount()
+      }
+
+      console.log(`I AM ADD TO CART: `, addNewCart.data)
+      console.log(`Added to cart successfully`, addNewCart.status)
     }
     catch(errAddCart){
       console.log(`!!! Error adding new to cart !!!`, errAddCart)
     }
+    finally{
+      setLoadingStates((prev) => ({ ...prev, [key]: false }))
+    }
   }
+
+  const sortedProducts = [...products].sort((a, b) => {
+    if (sortBy === "Alphabetically") {
+      return a.title.localeCompare(b.title);
+    } else if (sortBy === "Price") {
+      return a.price - b.price;
+    }
+    return 0; // Default (no sorting)
+  })
 
   useEffect(() => {
     apiCall()
+    // addCart()
   }, [])
 
   return (
@@ -242,16 +238,15 @@ function App() {
             <span>FILTERS</span>
             <span>☰</span>
           </button>
-          <div className='lg:hidden relative w-40'>
-            <select defaultValue="FILTERS" className="select select-ghost">
-              <option disabled={true}>FILTERS</option>
-              <option>Inter</option>
-              <option>Poppins</option>
-              <option>Raleway</option>
-            </select>
-          </div>
+          
+          <div className='lg:hidden relative w-40'></div>
+
           <div className='relative'>
-            <select defaultValue="SORT BY" className="select select-ghost">
+            <select 
+              defaultValue="SORT BY" 
+              className="select select-ghost"
+              onChange={(e) => setSortBy(e.target.value)}
+            >
               <option disabled={true}>SORT BY</option>
               <option>Alphabetically </option>
               <option>Price </option>
@@ -270,16 +265,45 @@ function App() {
             {
               justInProd.map((display, index) => {
                 return(
-                  <div key={index} className="card bg-base-100 shadow-sm rounded-none">
+                  <div key={index} className="card bg-base-100 shadow-sm rounded-none group">
                     {
                       display.products.map((desc, i) => (
-                        <div key={i}>
-                          <figure className='bg-[#F1F1F1]'>
+                        <div key={i} className='relative'>
+                          <figure className='bg-[#F1F1F1] overflow-hidden'>
                             <img
                               src={(`../src/assets/no_bg/${desc.image}`)}
-                              className='max-h-32 sm:max-h-60 w-auto object-contain'
+                              className='max-h-32 sm:max-h-60 w-auto object-contain transition-all duration-300 group-hover:scale-110'
                             />
+                            <div className="absolute inset-0 backdrop-blur-sm flex items-center justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                              <button 
+                                className="px-4 py-2 bg-white text-black font-medium rounded-md shadow hover:bg-gray-300"
+                                onClick={() => addCart(display.userId, desc)}
+                              >
+                                {
+                                  loadingStates[`${display.userId}-${desc.title}`] ? 
+                                  (
+                                    <span className="loading loading-spinner loading-md"></span>
+                                  ) 
+                                  :
+                                  'Add to Cart'
+                                }
+                              </button>
+                            </div>
                           </figure>
+
+                          <button 
+                            className="btn px-4 py-2 bg-[#F08C68] text-[#3B2925] font-medium w-full block md:inline-block lg:inline-block xl:hidden"
+                            onClick={() => addCart(display.userId, desc)}
+                          >
+                            {
+                              loadingStates[`${display.userId}-${desc.title}`] ? 
+                              (
+                                <span className="loading loading-spinner loading-md"></span>
+                              ) 
+                              :
+                              'Add to Cart'
+                            }
+                          </button>
                           <div className='card-body uppercase'>
                             <p>{desc.category}</p>
                             <div className='flex flex-col lg:flex-row sm:justify-between'>

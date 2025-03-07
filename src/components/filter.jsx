@@ -62,7 +62,7 @@ export default function Filter() {
                     {
                         displayCat.map((cat, index) => {
                             return(
-                                <div key={index} >
+                                <div key={index} className='pb-2'>
                                     <img 
                                         src={(`../src/assets/${cat.img}`)}
                                     />
